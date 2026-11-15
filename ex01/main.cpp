@@ -1,4 +1,7 @@
 #include <iostream>
+#include <cassert>
+#include <sstream>
+#include <iterator>
 #include <vector>
 #include <list>
 #include <cstdlib>
@@ -104,8 +107,81 @@ static void	copyTest(void)
 		<< ", c longest: " << c.longestSpan() << std::endl;
 }
 
+static void	rangeTests(void)
+{
+	Span streamSpan(4);
+	std::istringstream input("1 2 3 4");
+	streamSpan.addRange(std::istream_iterator<int>(input), std::istream_iterator<int>());
+	assert(streamSpan.size() == 4);
+	assert(streamSpan.shortestSpan() == 1);
+	assert(streamSpan.longestSpan() == 3);
+	Span limited(3);
+	limited.addNumber(8);
+	std::istringstream excess("10 20 30");
+	bool full = false;
+	try { limited.addRange(std::istream_iterator<int>(excess), std::istream_iterator<int>()); }
+	catch (Span::FullException const &) { full = true; }
+	assert(full && limited.size() == 1);
+	std::vector<int> empty;
+	streamSpan.addRange(empty.begin(), empty.end());
+	assert(streamSpan.size() == 4);
+	Span zero(0);
+	zero.addRange(empty.begin(), empty.end());
+	full = false;
+	try { zero.addNumber(1); }
+	catch (Span::FullException const &) { full = true; }
+	assert(full && zero.size() == 0);
+	std::cout << "range regression tests passed" << std::endl;
+}
+
+static void	boundaryTests(void)
+{
+	Span duplicates(3);
+	duplicates.addNumber(-4);
+	duplicates.addNumber(-4);
+	duplicates.addNumber(9);
+	assert(duplicates.shortestSpan() == 0);
+	assert(duplicates.longestSpan() == 13);
+	Span extremes(2);
+	extremes.addNumber(INT_MIN);
+	extremes.addNumber(INT_MAX);
+	unsigned int expected = static_cast<unsigned int>(INT_MAX)
+		- static_cast<unsigned int>(INT_MIN);
+	assert(extremes.shortestSpan() == expected);
+	assert(extremes.longestSpan() == expected);
+	Span empty(1);
+	for (int count = 0; count < 2; ++count)
+	{
+		bool shortestFailed = false;
+		bool longestFailed = false;
+		try { empty.shortestSpan(); }
+		catch (Span::NoSpanException const &) { shortestFailed = true; }
+		try { empty.longestSpan(); }
+		catch (Span::NoSpanException const &) { longestFailed = true; }
+		assert(shortestFailed && longestFailed);
+		if (count == 0)
+			empty.addNumber(42);
+	}
+	Span assigned(1);
+	assigned = duplicates;
+	assert(assigned.capacity() == 3 && assigned.size() == 3);
+	assert(assigned.longestSpan() == 13);
+	Span independent(extremes);
+	extremes = duplicates;
+	assert(independent.longestSpan() == expected);
+	std::vector<int> numbers;
+	for (int i = 0; i < 10000; ++i)
+		numbers.push_back(i * 3 - 15000);
+	Span large(10000);
+	large.addRange(numbers.begin(), numbers.end());
+	assert(large.shortestSpan() == 3 && large.longestSpan() == 29997);
+	std::cout << "Span boundary tests passed" << std::endl;
+}
+
 int	main(void)
 {
+	boundaryTests();
+	rangeTests();
 	std::srand(std::time(NULL));
 
 	std::cout << "--- subject ---" << std::endl;

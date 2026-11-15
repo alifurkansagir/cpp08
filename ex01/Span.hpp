@@ -20,8 +20,8 @@ class Span
 		~Span(void);
 
 		void			addNumber(int number);
-		long			shortestSpan(void) const;
-		long			longestSpan(void) const;
+		unsigned int	shortestSpan(void) const;
+		unsigned int	longestSpan(void) const;
 		unsigned int	size(void) const;
 		unsigned int	capacity(void) const;
 
@@ -29,11 +29,16 @@ class Span
 		template <typename Iterator>
 		void	addRange(Iterator begin, Iterator end)
 		{
-			unsigned long	count = std::distance(begin, end);
-
-			if (_numbers.size() + count > _maxSize)
-				throw FullException();
-			_numbers.insert(_numbers.end(), begin, end);
+			// Stage one pass: input iterators cannot be traversed twice.
+			std::vector<int> pending;
+			std::vector<int>::size_type remaining = _maxSize - _numbers.size();
+			for (; begin != end; ++begin)
+			{
+				if (pending.size() == remaining)
+					throw FullException();
+				pending.push_back(*begin);
+			}
+			_numbers.insert(_numbers.end(), pending.begin(), pending.end());
 		}
 
 		class FullException : public std::exception
