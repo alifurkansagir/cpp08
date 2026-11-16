@@ -21,6 +21,10 @@ clean:
 fclean: clean
 	rm -f $(NAME)
 
-re: fclean all
+test: $(NAME)
+	./$(NAME)
 
-.PHONY: all clean fclean re
+re: fclean
+	$(MAKE) all
+
+.PHONY: all clean fclean re test
