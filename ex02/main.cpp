@@ -1,4 +1,6 @@
 #include <iostream>
+#include <cassert>
+#include <algorithm>
 #include <list>
 #include <vector>
 #include <string>
@@ -98,8 +100,42 @@ static void	extraTests(void)
 	std::cout << "| empty: " << (vstack.empty() ? "yes" : "no") << std::endl;
 }
 
+static void	regressionTests(void)
+{
+	MutantStack<int> stack;
+	assert(stack.empty() && stack.begin() == stack.end());
+	assert(stack.rbegin() == stack.rend());
+	std::list<int> reference;
+	for (int i = 0; i < 20; ++i)
+	{
+		stack.push(i - 10);
+		reference.push_back(i - 10);
+	}
+	assert(std::equal(stack.begin(), stack.end(), reference.begin()));
+	MutantStack<int> const copy(stack);
+	assert(std::equal(copy.rbegin(), copy.rend(), reference.rbegin()));
+	assert(std::equal(copy.begin(), copy.end(), reference.begin()));
+	*stack.begin() = 500;
+	assert(*copy.begin() == -10);
+	MutantStack<int> assigned;
+	assigned = stack;
+	stack.pop();
+	assert(assigned.size() == 20 && assigned.top() == 9);
+	std::stack<int> base(assigned);
+	assert(base.top() == assigned.top() && base.size() == assigned.size());
+	while (!assigned.empty())
+		assigned.pop();
+	assert(assigned.begin() == assigned.end());
+	assert(assigned.rbegin() == assigned.rend());
+	MutantStack<int, std::list<int> > listStack;
+	listStack.push(7);
+	assert(*listStack.begin() == 7 && listStack.top() == 7);
+	std::cout << "MutantStack regression tests passed" << std::endl;
+}
+
 int	main(void)
 {
+	regressionTests();
 	std::cout << "=== MutantStack ===" << std::endl;
 	subjectMutantStack();
 	std::cout << "=== std::list ===" << std::endl;
